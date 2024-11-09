@@ -37,7 +37,7 @@ def usage():
 
 Usage: {0} <output-format> [--colorize]
 
-Valid output formats are: json, mediawiki""".format(sys.argv[0]))
+Valid output formats are: json, csv, mediawiki""".format(sys.argv[0]))
     sys.exit(1)
 
 
@@ -47,7 +47,7 @@ def parse_args():
 
     if len(sys.argv) < 2 or len(sys.argv) > 3:
         usage()
-    if 'json' not in sys.argv[1] and 'mediawiki' not in sys.argv[1]:
+    if 'json' not in sys.argv[1] and 'csv' not in sys.argv[1] and 'mediawiki' not in sys.argv[1]:
         usage()
 
     if '--colorize' in sys.argv:
@@ -242,12 +242,25 @@ def __print_wiki_entry(code_point, ciphers):
     for library in LIBRARY_ORDER:
         print('{style}| {cipher}'.format(style=style, cipher=ciphers.get(library, '')))
 
+def print_csv(data):
+    values = []
+    header = ["hex",] + LIBRARY_ORDER
+    print(','.join(header))
+    for code_point, cypher in data.items():
+        r = [code_point.replace(',0x','')]
+        r.extend(list(cypher.values()))
+        line = ",".join(r)
+        print(line)
+
 
 # Print everything out
 def print_output(cipher_hex_values, output_format):
     # JSON output is super easy
     if output_format == 'json':
         print(json.dumps(cipher_hex_values, indent=2))
+
+    elif output_format == 'csv':
+        print_csv(cipher_hex_values)
 
     elif output_format == 'mediawiki':
         # Table header
