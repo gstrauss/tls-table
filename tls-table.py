@@ -100,7 +100,7 @@ def get_hex_values():
             columns = [ x.string for x in row.find_all('td') ]
 
             # For now, we can ignore any IANA entries with '-' or '*' in them
-            if '-' not in columns[0] and '*' not in columns[0]:
+            if '-' not in columns[0] and '*' not in columns[0] and columns[1] != 'Unassigned' and columns[1] != 'Reserved':
                 cipher_hex_values[ columns[0] ] = {
                     'GnuTLS': '',
                     'IANA': columns[1],
@@ -125,7 +125,8 @@ def get_hex_values():
 
                 if code_point in cipher_hex_values:
                     cipher_hex_values[code_point]['NSS'] = cipher
-                else:
+                # 0x00,0x60-66  Reserved to avoid conflicts with widely deployed implementations
+                elif not code_point.startswith('0x00,0x6'):
                     print('  Warning: code point {code_point} ({cipher}) not in IANA registry'.format(
                         code_point=code_point, cipher=cipher
                     ), file=sys.stderr)
@@ -174,13 +175,14 @@ def get_hex_values():
         # Some lines look like: #define GNUTLS_DH_ANON_3DES_EDE_CBC_SHA1 { 0x00, 0x1B }
         # Other look like:      #define GNUTLS_ECDHE_ECDSA_CAMELLIA_128_CBC_SHA256 { 0xC0,0x72 }
         for line in r.text.split('\n'):
-            if line.startswith('#define GNUTLS_'):
+            if line.startswith('#define GNUTLS_') and '{' in line:
                 cipher = line.split()[1][3:]
-                code_point = line.split('{')[-1].replace(' ', '').replace('}', '')
+                code_point = line.split('{')[-1].replace(' ', '').replace('}', '').upper().replace('X', 'x')
 
                 if code_point in cipher_hex_values:
                     cipher_hex_values[code_point]['GnuTLS'] = cipher
-                else:
+                # 0x00,0x60-66  Reserved to avoid conflicts with widely deployed implementations
+                elif not code_point.startswith('0x00,0x6'):
                     print('  Warning: code point {code_point} ({cipher}) not in IANA registry'.format(
                         code_point=code_point, cipher=cipher
                     ), file=sys.stderr)
