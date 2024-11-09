@@ -150,11 +150,30 @@ def get_hex_values():
 
                 # e.g., ECDHE_RSA_WITH_AES_128_GCM_SHA256 -> 0x0C,0x2F
                 openssl_hex_values[cipher] = code_point
+            elif line.startswith('# define TLS1_3_CK'):
+                cipher = line.split()[2].split('TLS1_3_CK_')[-1]
+                hex = line.split()[3]
+                code_point = '0x' + hex[6:8] + ',0x' + hex[8:10]
+
+                # e.g., TLS1_3_CK_AES_128_GCM_SHA256 -> 0x13,0x01
+                openssl_hex_values[cipher] = code_point
             elif line.startswith('# define TLS1_TXT'):
                 cipher = line.split()[2].split('TLS1_TXT_')[-1]
                 text = line.split()[3][1:-1]
 
                 # e.g., ECDHE_RSA_WITH_AES_128_GCM_SHA256 -> ECDHE-RSA-AES128-GCM-SHA256
+                openssl_txt_values[cipher] = text
+            elif line.startswith('# define TLS1_RFC'):
+                cipher = line.split()[2].split('TLS1_RFC_')[-1]
+                text = line.split()[3][1:-1]
+
+                # e.g., TLS1_RFC_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 -> TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+                openssl_txt_values[cipher] = text
+            elif line.startswith('# define TLS1_3_RFC'):
+                cipher = line.split()[2].split('TLS1_3_RFC_')[-1]
+                text = line.split()[3][1:-1]
+
+                # e.g., TLS1_3_RFC_AES_128_GCM_SHA256 -> TLS_AES_128_GCM_SHA256
                 openssl_txt_values[cipher] = text
 
         for key in openssl_hex_values.keys():
