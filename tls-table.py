@@ -176,12 +176,12 @@ def get_hex_values():
                 # e.g., TLS1_3_RFC_AES_128_GCM_SHA256 -> TLS_AES_128_GCM_SHA256
                 openssl_txt_values[cipher] = text
 
-        for key in openssl_hex_values.keys():
-            if openssl_hex_values[key] in cipher_hex_values:
-                cipher_hex_values[openssl_hex_values[key]]['OpenSSL'] = openssl_txt_values[key]
+        for key, value in openssl_hex_values.items():
+            if value in cipher_hex_values:
+                cipher_hex_values[value]['OpenSSL'] = openssl_txt_values[key]
             else:
                 print('  Warning: code point {code_point} ({cipher}) not in IANA registry'.format(
-                    code_point=openssl_hex_values[key], cipher=key
+                    code_point=value, cipher=key
                 ), file=sys.stderr)
     except:
         print('Unable to retrieve or parse OpenSSL cipher list', file=sys.stderr)
