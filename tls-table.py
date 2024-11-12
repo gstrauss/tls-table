@@ -56,33 +56,56 @@ def parse_args():
     return [sys.argv[1], colorize]
 
 def get_colorize_chart():
+    # XXX: should prefer to use code points from IANA_URL
+    name_code_points = {}
+    try:
+        output = subprocess.check_output(['openssl', 'ciphers', '-V'], universal_newlines=True)
+
+        for line in output.split('\n'):
+            if '0x' in line:
+                fields = line.split()
+                name_code_points[fields[2]] = fields[0]
+    except:
+        print('Unable to run openssl ciphers', file=sys.stderr)
+        sys.exit()
+
     print('Retrieving cipher suites from Mozilla Server Side TLS page', file=sys.stderr)
 
     # Grab the cipher suites from the Mozilla page
     r = requests.get(MOZILLA_SERVER_SIDE_TLS_URL)
 
     # Try to grab the ciphersuites out the ugly mess that is a wiki page
-    recommendations = [line.split("'''")[1] for line in r.text.split('\n') if "* Ciphersuites: '''" in line]
+    # XXX: should prefer to use structured data from guidelines instead of from wiki page
+    recommendations = [];
+    for line in r.text.split('\n'):
+        if "* Cipher suites (" in line:
+            if "'''" in line:
+                recommendations.append(line.split("'''")[1])
+            else:
+                recommendations.append('')
 
     __colorize_lists.update({
-        'Modern': get_colorize_chart_openssl_ciphers(recommendations[0]),
-        'Intermediate': get_colorize_chart_openssl_ciphers(recommendations[1]),
-        'Old': get_colorize_chart_openssl_ciphers(recommendations[2])
+        'Modern': get_colorize_chart_openssl_ciphers(name_code_points, recommendations[0] + ':' + recommendations[1]),
+        'Intermediate': get_colorize_chart_openssl_ciphers(name_code_points, recommendations[2] + ':' + recommendations[3]),
+        'Old': get_colorize_chart_openssl_ciphers(name_code_points, recommendations[4] + ':' + recommendations[5])
     })
 
-def get_colorize_chart_openssl_ciphers(ciphersuites):
-    try:
-        code_points = []
-        output = subprocess.check_output(['openssl', 'ciphers', '-V', ciphersuites])
+def get_colorize_chart_openssl_ciphers(name_code_points, ciphersuites):
+    code_points = []
+    for cipher in ciphersuites.split(':'):
+        if cipher in name_code_points:
+            code_points.append(name_code_points[cipher])
+        # XXX: explifies why input should be taken from IANA and guidelines instead of from wiki pages
+        elif cipher == 'ECDHE-ECDSA-AES256-SHA384':
+            code_points.append('0xC0,0x24')
+        elif cipher == 'ECDHE-RSA-AES256-SHA384':
+            code_points.append('0xC0,0x28')
+        elif cipher == 'DES-CBC3-SHA':
+            code_points.append('0x00,0x0A')
+        elif cipher != '':
+            print("Warning: not found: {0}".format(cipher))
 
-        for line in output.split('\n'):
-            if '0x' in line:
-                code_points.append(line.split()[0])
-
-        return code_points
-    except:
-        print('Unable to run openssl ciphers', file=sys.stderr)
-        sys.exit()
+    return code_points
 
 def get_hex_values():
     # Grab the list from the IANA
@@ -276,7 +299,7 @@ def print_output(cipher_hex_values, output_format):
             del(cipher_hex_values[code_point])
 
         # If they don't have a priority, then go by hex value
-        for code_point, ciphers in cipher_hex_values.items():
+        for code_point, ciphers in reversed(cipher_hex_values.items()):
             __print_wiki_entry(code_point, ciphers)
 
 
