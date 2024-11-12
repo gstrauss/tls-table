@@ -51,7 +51,8 @@ def parse_args():
         usage()
 
     if '--colorize' in sys.argv:
-        colorize = True
+        if sys.argv[1] == 'mediawiki':
+            colorize = True
 
     return [sys.argv[1], colorize]
 
